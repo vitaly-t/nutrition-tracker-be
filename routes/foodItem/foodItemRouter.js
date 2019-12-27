@@ -1,49 +1,43 @@
 const express = require("express");
 const db = require("./foodItemDB");
-const fetch = require("node-fetch");
+const { getFoodHandler } = require("../fatsecret/fatsecret");
 const mapFirebaseIDtoUserID = require("../../middleware/mapFirebaseIDtoUserID");
 
-const dev = false;
-const BASE_URL = dev
-  ? "http://localhost:4000"
-  : "https://nutri-journal.herokuapp.com";
-
 router = express.Router();
-
-const checkStatus = res => {
-  //Error Check
-  if (res.ok) {
-    return res;
-  } else {
-    throw new Error(`Request Failed: ${res.statusText}`);
-  }
-};
 
 router.get(
   "/getfooditem/:foodlogID/user/:user_id",
   mapFirebaseIDtoUserID,
-  async (req, res) => {
+  async (req, res, next) => {
     const { user_id, foodlogID } = req.params;
 
     try {
       const [foodItem] = await db.getFoodItem(foodlogID, user_id);
-      const { fatsecret_food_id } = foodItem;
-      //now that we have our data from the db we need to go and get the fatsecret_food_id for this record and return that info.
-      try {
-        var data;
-        await fetch(
-          `${BASE_URL}/fatsecret/get-food/${fatsecret_food_id}` //make a fetch request from our api and and get info
-        )
-          .then(checkStatus)
-          .then(res => res.json())
-          .then(json => (data = json)); // json is the actaul data being returned from out api call
-        const dataAtIndexOne = data[0];
-        res.status(200).json({ ...dataAtIndexOne, ...foodItem }); // return the api call json data and combine with local db data
-      } catch ({ message }) {
-        res.status(404).json(message);
-      }
-    } catch ({ message }) {
-      res.status(500).json(message);
+      res.locals.foodItem = foodItem;
+      next();
+    } catch (err) {
+      res.status(500).json({
+        errorMessage: "Could not retrieve food item"
+      });
+    }
+  },
+  async (req, res) => {
+    let foodItem = res.locals.foodItem;
+
+    try {
+      req.params.food_id = foodItem.fatsecret_food_id;
+      res.locals.returnData = true;
+
+      const fatSecretFoodData = await getFoodHandler(req, res);
+
+      res.status(200).json({
+        foodItem,
+        fatSecretFoodData
+      });
+    } catch (err) {
+      res.status(500).json({
+        errorMessage: "Could not retrieve fat secret food data"
+      });
     }
   }
 );
@@ -56,7 +50,7 @@ router.put(
     const updatedRecord = req.body;
 
     try {
-      //call to db to update item;
+      // call to db to update item;
       const item = await db.updateFoodItem(foodLogID, user_id, updatedRecord);
       res.status(201).json(item);
     } catch ({ message }) {
@@ -81,4 +75,24 @@ router.delete(
   }
 );
 
+function getFatSecretData(req, res) {
+  const food_id = req.param.food_id;
+
+  req.url = `/fatsecret/get-food/${food_id}`;
+
+  return express.handle(req, res);
+}
+
 module.exports = router;
+
+// const { fatsecret_food_id } = foodItem;
+//now that we have our data from the db we need to go and get the fatsecret_food_id for this record and return that info.
+// try {
+//   var data;
+//   await fetch(
+//     `${BASE_URL}/fatsecret/get-food/${fatsecret_food_id}` //make a fetch request from our api and and get info
+//   )
+//     .then(checkStatus)
+//     .then(res => res.json())
+//     .then(json => (data = json)); // json is the actaul data being returned from out api call
+//   const dataAtIndexOne = data[0];
