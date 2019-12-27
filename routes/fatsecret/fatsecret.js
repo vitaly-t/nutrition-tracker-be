@@ -118,6 +118,12 @@ const getFatSecretData = async (method, food_id) => {
 const getFoodHandler = async (req, res) => {
   const method = "food.get";
   const fatsecretFoodID = req.params.food_id;
+  // when this variable is present on the res object
+  // it will redirect this function from returning
+  // 'foods' in the form of response, to simply
+  // returning it from the function
+  // variable is present when this function is
+  // used outside the scope of this end-point
   const returnData = res.locals.returnData;
 
   let foods;
