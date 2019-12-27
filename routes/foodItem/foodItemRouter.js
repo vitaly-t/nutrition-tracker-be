@@ -60,7 +60,7 @@ router.delete(
 );
 
 /********************************************************
- *                  GET FAT SECRET DATA                 *
+ *                 GET ALL SERVING TYPES                *
  ********************************************************/
 async function getAllServingTypes(req, res) {
   // retrieves the foodItem variable
