@@ -1,7 +1,6 @@
 const express = require("express");
-const oathQueryBuilder = require("./oauthQueryBuilder");
-
 const db = require("./getFoods.js");
+const oathQueryBuilder = require("./oauthQueryBuilder");
 const { upsertFoods } = require("./upsertFoods.js");
 
 const router = express.Router();
@@ -81,7 +80,11 @@ const transformFatSecretData = response => {
     // measurement_description, number_of_units
     // and stores the ones we're interested in,
     // in "without_extra_attributes" constant
-    const { measurement_description, number_of_units, ...without_extra_attributes } = data_first_pass;
+    const {
+      measurement_description,
+      number_of_units,
+      ...without_extra_attributes
+    } = data_first_pass;
 
     return without_extra_attributes;
   }; // END denormalizeFoodData() definition
@@ -115,6 +118,7 @@ const getFatSecretData = async (method, food_id) => {
 const getFoodHandler = async (req, res) => {
   const method = "food.get";
   const fatsecretFoodID = req.params.food_id;
+  const returnData = res.locals.returnData;
 
   let foods;
   try {
@@ -141,7 +145,7 @@ const getFoodHandler = async (req, res) => {
       message: "Failed to get food data"
     });
   }
-
+  if (returnData) return foods;
   res.send(foods);
 };
 
