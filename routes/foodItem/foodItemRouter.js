@@ -13,6 +13,9 @@ router.get(
 
     try {
       const [foodItem] = await db.getFoodItem(foodlogID, user_id);
+      // creates a variable scoped to this request to
+      // be consumed by the subsequent middle-ware function call.
+      // stores the foodItem returned from the above query
       res.locals.foodItem = foodItem;
       next();
     } catch (err) {
@@ -21,7 +24,7 @@ router.get(
       });
     }
   },
-  getFatSecretData
+  getAllServingTypes
 );
 
 router.put(
@@ -32,7 +35,7 @@ router.put(
     const updatedRecord = req.body;
 
     try {
-      //call to db to update item;
+      // call to db to update item;
       const item = await db.updateFoodItem(foodLogID, user_id, updatedRecord);
       res.status(201).json(item);
     } catch ({ message }) {
@@ -59,17 +62,22 @@ router.delete(
 /********************************************************
  *                  GET FAT SECRET DATA                 *
  ********************************************************/
-async function getFatSecretData(req, res) {
+async function getAllServingTypes(req, res) {
+  // retrieves the foodItem variable
   const foodItem = res.locals.foodItem;
   req.params.food_id = foodItem.fatsecret_food_id;
+  // creates a new variable called returnData
+  // to be consumed by getFoodHandler below
+  // redirects getFoodHandler to return the data
+  // instead of sending the data in a response
   res.locals.returnData = true;
 
   try {
-    const fatSecretFoodData = await getFoodHandler(req, res);
+    const servingTypes = await getFoodHandler(req, res);
 
     res.status(200).json({
       foodItem,
-      fatSecretFoodData
+      servingTypes
     });
   } catch (err) {
     res.status(500).json({
